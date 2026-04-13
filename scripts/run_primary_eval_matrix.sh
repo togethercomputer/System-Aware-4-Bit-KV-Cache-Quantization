@@ -6,14 +6,14 @@
 #   ./scripts/run_primary_eval_matrix.sh <METHOD>
 # Methods: bf16 | int4 | bdr | bdr_kv
 #
-# Optional env: MODEL_PATH, PORT, SIMPLE_EVALS_DIR,
-#   PREFILL_ATTENTION_BACKEND (default fa3), DECODE_ATTENTION_BACKEND (default triton)
+# Optional env: MODEL_PATH (default Qwen/Qwen3-4B-Thinking-2507 for accuracy), PORT,
+#   SIMPLE_EVALS_DIR, PREFILL_ATTENTION_BACKEND (default fa3), DECODE_ATTENTION_BACKEND (default triton)
 
 set -euo pipefail
 METHOD="${1:-}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FR="$ROOT/third_party/sglang-fast-rotation/python"
-MODEL_PATH="${MODEL_PATH:-Qwen/Qwen3-8B}"
+MODEL_PATH="${MODEL_PATH:-Qwen/Qwen3-4B-Thinking-2507}"
 PORT="${PORT:-30000}"
 PREFILL_ATTENTION_BACKEND="${PREFILL_ATTENTION_BACKEND:-fa3}"
 DECODE_ATTENTION_BACKEND="${DECODE_ATTENTION_BACKEND:-triton}"
@@ -95,12 +95,11 @@ else
 fi
 cat <<EOF
 --- Client (open-source simple-evals, separate terminal) ---
-# https://github.com/openai/simple-evals
+# Client prep: README.md#prepare  GPQA: README.md#accuracy-primary and upstream
+# https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals
 export OPENAI_BASE_URL="http://127.0.0.1:${PORT}/v1"
 export OPENAI_API_KEY="dummy"
 ${SE_CMD}
-python -m simple-evals.simple_evals --list-models
-python -m simple-evals.simple_evals --model <model_id> --examples 200
 EOF
 if [[ -z "$SE" ]]; then
   echo "# Tip: export SIMPLE_EVALS_DIR=/abs/path/to/simple-evals before $0 to emit a concrete cd." >&2

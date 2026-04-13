@@ -89,12 +89,11 @@ else
 fi
 cat <<EOF
 --- Client (open-source simple-evals, separate terminal) ---
-# https://github.com/openai/simple-evals
+# Same as primary: README.md#prepare  README.md#accuracy-primary
+# https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals
 export OPENAI_BASE_URL="http://127.0.0.1:${PORT}/v1"
 export OPENAI_API_KEY="dummy"
 ${SE_CMD}
-python -m simple-evals.simple_evals --list-models
-python -m simple-evals.simple_evals --model <model_id> --examples 200
 EOF
 if [[ -z "$SE" ]]; then
   echo "# Tip: export SIMPLE_EVALS_DIR=/abs/path/to/simple-evals before $0 to emit a concrete cd." >&2
