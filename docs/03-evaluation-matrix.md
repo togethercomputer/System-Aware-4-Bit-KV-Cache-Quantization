@@ -17,9 +17,14 @@ Example (adjust model and port):
 cd third_party/sglang-kmeans/python
 export OPENAI_API_KEY=dummy   # not used by local SGLang but some clients require a value
 
-# Example: BF16 KV
-python -m sglang.launch_server --model-path "Qwen/Qwen3-8B" --port 30000 --kv-cache-dtype auto
+# Example: BF16 KV (MHA + Flash Attention prefill + Triton decode)
+python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  --model-path "Qwen/Qwen3-8B" --port 30000 --kv-cache-dtype auto
 ```
+
+Use **MHA** models and the same attention stack as in [01-preparation.md](01-preparation.md#attention-backends-and-model-support-bdr-and-k-means).
 
 Point simple-evals at the server (OpenAI Python SDK v1 style):
 

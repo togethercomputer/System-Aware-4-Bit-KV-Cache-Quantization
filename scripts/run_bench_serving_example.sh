@@ -11,9 +11,11 @@
 #   ./scripts/run_bench_serving_example.sh client
 #
 # Env:
-#   MODEL_PATH   (default meta-llama/Meta-Llama-3.1-8B-Instruct)
-#   PORT         (default 30000)
-#   KV_MODE      bf16 | int4 | bdr  (default bf16)
+#   MODEL_PATH                (default meta-llama/Meta-Llama-3.1-8B-Instruct)
+#   PORT                      (default 30000)
+#   KV_MODE                   bf16 | int4 | bdr  (default bf16)
+#   PREFILL_ATTENTION_BACKEND (default fa3)
+#   DECODE_ATTENTION_BACKEND  (default triton)
 
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,6 +23,8 @@ FR="$ROOT/third_party/sglang-fast-rotation/python"
 MODEL_PATH="${MODEL_PATH:-meta-llama/Meta-Llama-3.1-8B-Instruct}"
 PORT="${PORT:-30000}"
 KV_MODE="${KV_MODE:-bf16}"
+PREFILL_ATTENTION_BACKEND="${PREFILL_ATTENTION_BACKEND:-fa3}"
+DECODE_ATTENTION_BACKEND="${DECODE_ATTENTION_BACKEND:-triton}"
 ROLE="${1:-}"
 
 if [[ ! -d "$FR" ]]; then
@@ -52,9 +56,12 @@ if [[ "$ROLE" == "server" ]]; then
       exit 1
       ;;
   esac
-  echo "Starting server KV_MODE=$KV_MODE dtype=$DTYPE on port $PORT"
+  echo "Starting server KV_MODE=$KV_MODE dtype=$DTYPE on port $PORT (prefill=$PREFILL_ATTENTION_BACKEND decode=$DECODE_ATTENTION_BACKEND)"
   cd "$FR"
-  exec python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype "$DTYPE"
+  exec python -m sglang.launch_server \
+    --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+    --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+    --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype "$DTYPE"
 fi
 
 if [[ "$ROLE" == "client" ]]; then

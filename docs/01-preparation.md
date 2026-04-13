@@ -5,6 +5,28 @@
 - Linux with NVIDIA GPUs and a recent CUDA stack compatible with your PyTorch build.
 - Python 3.10+ is typical for SGLang; follow the version range stated in each submodule’s `python/pyproject.toml`.
 
+## Attention backends and model support (BDR and k-means)
+
+The BDR and k-means KV paths in our forks are implemented and tested on the following stack:
+
+| Requirement | Details |
+|-------------|---------|
+| **Attention architecture** | **MHA (multi-head attention) only.** Models using **MLA** (multi-head latent attention) or other non-MHA layouts are **not** supported by these KV quantization / rotation code paths in this release. |
+| **Prefill** | Use a **Flash Attention** backend in SGLang’s CLI, for example **`--prefill-attention-backend fa3`** (or **`fa4`** if that is what your GPU and SGLang version support—see [SGLang attention backend](https://docs.sglang.ai/advanced_features/attention_backend.html)). |
+| **Decode** | Use the **Triton** decode path: **`--decode-attention-backend triton`**. |
+
+Always pass explicit prefill/decode backends when reproducing paper numbers so you do not rely on defaults that differ by platform:
+
+```bash
+python -m sglang.launch_server \
+  --model-path "YOUR/MHA-MODEL" \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  ...
+```
+
+If `fa3` is unavailable on your stack, pick the closest **Flash Attention–family** option listed in `python -m sglang.launch_server --help` under `--prefill-attention-backend`, and keep decode on **`triton`**.
+
 ## Clone this repository
 
 ```bash
@@ -26,18 +48,28 @@ git submodule update --init third_party/sglang-fast-rotation third_party/sglang-
 
 See [SUBMODULE_VERSIONS.md](../SUBMODULE_VERSIONS.md).
 
-## Build SGLang (each fork)
+## Install SGLang from submodules
 
-From the repository root:
+SGLang is not installed from PyPI for paper reproduction: build **editable installs** from the pinned submodules (same procedure as upstream [SGLang install from source](https://github.com/sgl-project/sglang#install), but using our trees).
+
+From the **paper repository root**:
 
 ```bash
-# Fast rotation fork (inference + benchmarks)
+# Fast-rotation fork (BDR + INT4, throughput benchmarks)
 cd third_party/sglang-fast-rotation/python
-pip install -e ".[all]"   # or a slimmer extra set per upstream docs
+pip install -e ".[all]"   # or a slimmer extra set per upstream SGLang docs
 
-# K-means fork (accuracy matrix + calibration)
+# K-means fork (accuracy matrix, KV dump, centroid k-means)
 cd ../../sglang-kmeans/python
 pip install -e ".[all]"
+```
+
+Use a **fresh virtualenv or conda env** per upstream guidance. CUDA toolkit and PyTorch versions must match what that SGLang revision expects (see submodule `python/pyproject.toml` and upstream docs).
+
+Verify the CLI is on your `PATH`:
+
+```bash
+python -m sglang.launch_server --help | head
 ```
 
 Install **extra dependencies** used by this project:

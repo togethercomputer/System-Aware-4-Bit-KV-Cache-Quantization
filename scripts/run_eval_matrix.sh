@@ -11,8 +11,10 @@
 #   MODEL_PATH         (default Qwen/Qwen3-8B)
 #   PORT               (default 30000)
 #   CENTROIDS          directory for SGLANG_KV_CENTROIDS_PATH (kmeans*)
-#   N_CLUSTERS         (default 16)
-#   SIMPLE_EVALS_DIR   path to your simple-evals clone (printed in client block)
+#   N_CLUSTERS              (default 16)
+#   SIMPLE_EVALS_DIR        path to your simple-evals clone (printed in client block)
+#   PREFILL_ATTENTION_BACKEND (default fa3; Flash Attention path for MHA)
+#   DECODE_ATTENTION_BACKEND  (default triton)
 
 set -euo pipefail
 METHOD="${1:-}"
@@ -21,6 +23,8 @@ KM="$ROOT/third_party/sglang-kmeans/python"
 MODEL_PATH="${MODEL_PATH:-Qwen/Qwen3-8B}"
 PORT="${PORT:-30000}"
 N_CLUSTERS="${N_CLUSTERS:-16}"
+PREFILL_ATTENTION_BACKEND="${PREFILL_ATTENTION_BACKEND:-fa3}"
+DECODE_ATTENTION_BACKEND="${DECODE_ATTENTION_BACKEND:-triton}"
 
 if [[ -z "$METHOD" ]]; then
   echo "Usage: $0 <bf16|int4|bdr|bdr_kv|kmeans|kmeans_bdr>" >&2
@@ -39,7 +43,10 @@ unset HADAMARD ROTATE_V HADAMARD_ORDER SGLANG_KV_CENTROIDS_PATH N_CLUSTERS || tr
 export HADAMARD=0
 export ROTATE_V=0
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype auto
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype auto
 EOF
     ;;
   int4)
@@ -48,7 +55,10 @@ export HADAMARD=0
 export ROTATE_V=0
 unset SGLANG_KV_CENTROIDS_PATH || true
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
 EOF
     ;;
   bdr)
@@ -58,7 +68,10 @@ export ROTATE_V=0
 export HADAMARD_ORDER="${HADAMARD_ORDER:-16}"
 unset SGLANG_KV_CENTROIDS_PATH || true
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
 EOF
     ;;
   bdr_kv)
@@ -68,7 +81,10 @@ export ROTATE_V=1
 export HADAMARD_ORDER="${HADAMARD_ORDER:-16}"
 unset SGLANG_KV_CENTROIDS_PATH || true
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
 EOF
     ;;
   kmeans|kmeans_bdr)
@@ -84,7 +100,10 @@ export ROTATE_V=0
 export N_CLUSTERS=$N_CLUSTERS
 export SGLANG_KV_CENTROIDS_PATH="$C"
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
 EOF
     else
       cat <<EOF
@@ -94,7 +113,10 @@ export HADAMARD_ORDER="${HADAMARD_ORDER:-16}"
 export N_CLUSTERS=$N_CLUSTERS
 export SGLANG_KV_CENTROIDS_PATH="$C"
 cd "$KM"
-python -m sglang.launch_server --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend "$PREFILL_ATTENTION_BACKEND" \
+  --decode-attention-backend "$DECODE_ATTENTION_BACKEND" \
+  --model-path "$MODEL_PATH" --port "$PORT" --kv-cache-dtype int4
 EOF
     fi
     ;;

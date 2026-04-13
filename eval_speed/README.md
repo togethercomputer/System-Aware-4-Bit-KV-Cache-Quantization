@@ -7,7 +7,7 @@ This folder is the **hub for throughput experiments**: commands, conventions, an
 
 ## Server build
 
-Use **[third_party/sglang-fast-rotation](../third_party/sglang-fast-rotation)** (fused INT4 KV + BDR). Install from `third_party/sglang-fast-rotation/python` per [docs/01-preparation.md](../docs/01-preparation.md).
+Use **[third_party/sglang-fast-rotation](../third_party/sglang-fast-rotation)** (fused INT4 KV + BDR). Install from `third_party/sglang-fast-rotation/python` per [docs/01-preparation.md](../docs/01-preparation.md). Use **MHA** models and **Flash Attention prefill + Triton decode** (see [Attention backends…](../docs/01-preparation.md#attention-backends-and-model-support-bdr-and-k-means)).
 
 ## Recommended workload (template)
 
@@ -21,6 +21,8 @@ export HADAMARD=1
 export ROTATE_V=0
 export HADAMARD_ORDER=16
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "meta-llama/Meta-Llama-3.1-8B-Instruct" \
   --port 30000 \
   --kv-cache-dtype int4

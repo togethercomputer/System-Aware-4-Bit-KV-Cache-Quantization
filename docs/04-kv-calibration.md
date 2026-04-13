@@ -14,10 +14,14 @@ export DUMP_KVCACHE_TOKENS=512      # minimum tokens before a layer dumps once
 export DUMP_KVCACHE_DIR=/path/to/kv_dumps
 
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-8B" \
   --port 30000 \
   --kv-cache-dtype auto
 ```
+
+Use **MHA** models; see [01-preparation.md](01-preparation.md#attention-backends-and-model-support-bdr-and-k-means).
 
 Drive enough prefill/decode traffic so each layer hits the threshold at least once. Files appear as:
 
@@ -51,6 +55,8 @@ export N_CLUSTERS=16   # must match filename suffix
 export SGLANG_KV_CENTROIDS_PATH=/path/to/centroids_out
 
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-8B" \
   --port 30000 \
   --kv-cache-dtype int4

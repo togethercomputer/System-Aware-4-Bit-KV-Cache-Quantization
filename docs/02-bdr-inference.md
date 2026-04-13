@@ -25,10 +25,14 @@ export ROTATE_V=0
 export HADAMARD_ORDER=16   # must divide head_dim; try 16 / 64 / 128 per model
 
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-8B" \
   --port 30000 \
   --kv-cache-dtype int4
 ```
+
+Use an **MHA** checkpoint; see [01-preparation.md](01-preparation.md#attention-backends-and-model-support-bdr-and-k-means) for backend and architecture prerequisites.
 
 - **BF16 KV baseline:** omit rotation and use `--kv-cache-dtype auto` (or your SGLang version’s bf16 KV setting).  
 - **INT4 KV without rotation:** `HADAMARD=0` `ROTATE_V=0` and `--kv-cache-dtype int4`.
@@ -39,7 +43,10 @@ python -m sglang.launch_server \
 export HADAMARD=1
 export ROTATE_V=1
 export HADAMARD_ORDER=16
-python -m sglang.launch_server --model-path "Qwen/Qwen3-8B" --port 30000 --kv-cache-dtype int4
+python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  --model-path "Qwen/Qwen3-8B" --port 30000 --kv-cache-dtype int4
 ```
 
 ## Dependency

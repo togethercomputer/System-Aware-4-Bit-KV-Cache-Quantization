@@ -1,6 +1,6 @@
 # Overview
 
-This repository is the official companion for **System-Aware 4-Bit KV Cache Quantization**. It does not reimplement inference from scratch: methods are delivered as **forks of [SGLang](https://github.com/sgl-project/sglang)** with KV-cache quantization and optional **block-diagonal Hadamard rotation (BDR)** before INT4 storage.
+This repository is the official companion for **System-Aware 4-Bit KV Cache Quantization**. It does not reimplement inference from scratch: methods are delivered as **forks of [SGLang](https://github.com/sgl-project/sglang)** with KV-cache quantization and optional **block-diagonal Hadamard rotation (BDR)** before INT4 storage. Documented experiments assume **MHA** models with **Flash Attention prefill** (`fa3` / `fa4` as appropriate) and **Triton decode**; see [01-preparation.md](01-preparation.md#attention-backends-and-model-support-bdr-and-k-means).
 
 ## Two SGLang submodules
 

@@ -2,6 +2,8 @@
 
 **Experiment hub:** [../eval_speed/README.md](../eval_speed/README.md) (commands, results folder).
 
+Use **MHA** models with **Flash Attention prefill** and **Triton decode** (see [01-preparation.md](01-preparation.md#attention-backends-and-model-support-bdr-and-k-means)).
+
 Speed results should use the **fast-rotation** submodule, which contains the fused INT4 + BDR kernels intended for serving.
 
 Official SGLang documentation (upstream):
@@ -16,8 +18,10 @@ Start the server from **sglang-fast-rotation**, then in another shell (same Pyth
 ```bash
 cd third_party/sglang-fast-rotation/python
 
-# BF16 KV example
+# BF16 KV example (MHA + fa3 prefill + triton decode)
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "meta-llama/Meta-Llama-3.1-8B-Instruct" \
   --port 30000 \
   --kv-cache-dtype auto
@@ -53,6 +57,8 @@ export HADAMARD=1
 export ROTATE_V=0
 export HADAMARD_ORDER=16
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "meta-llama/Meta-Llama-3.1-8B-Instruct" \
   --port 30000 \
   --kv-cache-dtype int4

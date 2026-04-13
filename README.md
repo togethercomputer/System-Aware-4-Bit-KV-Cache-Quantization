@@ -33,11 +33,32 @@ cd System-Aware-4-Bit-KV-Cache-Quantization
 
 **Accuracy** in this repository is reproduced only with the open-source **[simple-evals](https://github.com/openai/simple-evals)** client against SGLang’s OpenAI-compatible API (not tore-eval). If `git submodule update --init --recursive` fails on an optional nested dependency inside a fork, initialize the two top-level submodules only; see [SUBMODULE_VERSIONS.md](SUBMODULE_VERSIONS.md) and [scripts/clone_submodules.sh](scripts/clone_submodules.sh).
 
-Full install (CUDA, PyTorch, `fast_hadamard_transform`, `flash-kmeans`, simple-evals): [docs/01-preparation.md](docs/01-preparation.md). Overview of docs: [docs/00-overview.md](docs/00-overview.md).
+### Install SGLang
+
+Install **editable** SGLang from the pinned forks (not a standalone PyPI-only install for reproduction):
+
+```bash
+cd third_party/sglang-fast-rotation/python && pip install -e ".[all]"
+cd ../../sglang-kmeans/python && pip install -e ".[all]"
+```
+
+Full steps (CUDA / PyTorch alignment, verification): [docs/01-preparation.md](docs/01-preparation.md#install-sglang-from-submodules).
+
+### Prerequisites (BDR and k-means)
+
+| Requirement | Why |
+|-------------|-----|
+| **MHA models only** | BDR and k-means KV paths here target **multi-head attention (MHA)**. **MLA** and other non-MHA architectures are **not supported** on these code paths. |
+| **Prefill: Flash Attention backend** | Use SGLang’s Flash Attention option, e.g. **`--prefill-attention-backend fa3`** (or **`fa4`** if required by your GPU / SGLang revision). |
+| **Decode: Triton backend** | Use **`--decode-attention-backend triton`** for the decode kernels that pair with this INT4 / rotation work. |
+
+Always set prefill and decode backends explicitly when reproducing experiments. Details: [docs/01-preparation.md](docs/01-preparation.md#attention-backends-and-model-support-bdr-and-k-means).
+
+Other dependencies (`fast_hadamard_transform`, `flash-kmeans`, simple-evals): [docs/01-preparation.md](docs/01-preparation.md). Overview: [docs/00-overview.md](docs/00-overview.md).
 
 ## Run BDR
 
-Default setting: **rotate K only** (`ROTATE_V=0`). From [third_party/sglang-fast-rotation/python](third_party/sglang-fast-rotation/python) after `pip install -e ".[all]"` and `pip install fast_hadamard_transform`:
+Default setting: **rotate K only** (`ROTATE_V=0`). From [third_party/sglang-fast-rotation/python](third_party/sglang-fast-rotation/python) after `pip install -e ".[all]"` and `pip install fast_hadamard_transform`, on an **MHA** model:
 
 ```bash
 export HADAMARD=1
@@ -45,6 +66,8 @@ export ROTATE_V=0
 export HADAMARD_ORDER=16
 
 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-8B" \
   --port 30000 \
   --kv-cache-dtype int4

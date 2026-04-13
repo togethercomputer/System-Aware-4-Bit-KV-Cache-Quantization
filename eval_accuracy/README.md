@@ -11,6 +11,8 @@ This folder is the **hub for accuracy experiments**: method matrix, calibration,
 
 Build and run **[third_party/sglang-kmeans](../third_party/sglang-kmeans)** so you can evaluate **BF16**, **INT4**, **BDR**, **k-means**, and **k-means + rotation** with the same OpenAI-compatible API.
 
+Use **MHA** checkpoints and **`--prefill-attention-backend fa3` + `--decode-attention-backend triton`** (or the Flash Attention variant your GPU supports); see [../docs/01-preparation.md](../docs/01-preparation.md#attention-backends-and-model-support-bdr-and-k-means). [run_eval_matrix.sh](../scripts/run_eval_matrix.sh) prints these flags by default (`PREFILL_ATTENTION_BACKEND` / `DECODE_ATTENTION_BACKEND` override).
+
 ## Client (open-source simple-evals only)
 
 Accuracy is **not** run through tore-eval. Install **[simple-evals](https://github.com/openai/simple-evals)** from GitHub:
