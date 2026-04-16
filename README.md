@@ -160,18 +160,16 @@ Add a local model alias once in `third_party/simple-evals/simple_evals.py` insid
 ),
 ```
 
+#### RUN-GPQA
 With **simple-evals** installed and the SGLang server already up (start it in the desired mode from [Run BDR](#run-bdr), using **`Qwen/Qwen3-4B-Thinking-2507`** as the model), point the client at **`http://127.0.0.1:<port>/v1`** and run GPQA:
 
 ```bash
 cd third_party/simple-evals
 export OPENAI_BASE_URL="http://127.0.0.1:30000/v1" 
 export OPENAI_API_KEY="dummy"
-python -m simple-evals.simple_evals --model qwen3_4b --eval gpqa --n-repeats 1
+python -m simple-evals.simple_evals --model qwen3_4b --eval gpqa --n-repeats 3
 ```
 
-Override **`OPENAI_BASE_URL`** if your server is not on the default `http://127.0.0.1:30000/v1`. If you want a slightly more configurable wrapper, use **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)**.
-
-**Hub for logs / summary tables:** [eval_primary/](eval_primary/)
 
 #### Accuracy results (primary)
 
@@ -179,9 +177,8 @@ Override **`OPENAI_BASE_URL`** if your server is not on the default `http://127.
 |-------|--------|-----------|-------|
 | Qwen/Qwen3-4B-Thinking-2507 | BF16 | GPQA | |
 | Qwen/Qwen3-4B-Thinking-2507 | INT4 | GPQA | |
-| Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | 63.6364 |
+| Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | 65.8249 |
 
-Fill from the paper or from [eval_primary/results/](eval_primary/results/).
 
 ### Throughput and latency (primary)
 
