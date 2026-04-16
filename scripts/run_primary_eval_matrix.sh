@@ -40,9 +40,9 @@ if [[ ! -d "$SE" ]]; then
 simple-evals directory not found: $SE
 
 Initialize it first:
-  git submodule update --init third_party/simple-evals
+  git submodule update --init --checkout third_party/simple-evals
   cd third_party/simple-evals
-  pip install -e .
+  pip install openai pandas requests jinja2 tqdm numpy
 EOF
   exit 1
 fi
@@ -57,7 +57,7 @@ export OPENAI_BASE_URL
 export OPENAI_API_KEY
 
 CMD=(
-  "$PYTHON_BIN" -m simple-evals.simple_evals
+  "$PYTHON_BIN" simple_evals.py
   --model "$MODEL"
   --eval gpqa
 )

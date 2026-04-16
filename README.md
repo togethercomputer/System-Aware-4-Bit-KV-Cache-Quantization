@@ -138,23 +138,33 @@ python scripts/bdr_smoke_test.py --port 30001 --model Qwen/Qwen3-4B-Thinking-250
 
 #### Prepare
 
-**Prerequisite (GPQA client):** **[openai/simple-evals](https://github.com/openai/simple-evals)** is included as a submodule at **`third_party/simple-evals`**. It is not initialized by default (not needed for BDR server runs), so init and install it explicitly:
+**Prerequisite (GPQA client):** **[openai/simple-evals](https://github.com/openai/simple-evals)** is included as a submodule at **`third_party/simple-evals`**. It is not initialized by default (not needed for BDR server runs), so init it explicitly and install the runtime dependencies:
 
 ```bash
-git submodule update --init third_party/simple-evals
+git submodule update --init --checkout third_party/simple-evals
 cd third_party/simple-evals
-pip install -e .
-pip install openai tqdm numpy
+pip install openai pandas requests jinja2 tqdm numpy
 ```
 
-How to run evals (models, **`--eval gpqa`**, **`OPENAI_BASE_URL`**, registering a sampler for your SGLang `--model-path`, etc.) follows upstream [simple-evals README](https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals).
+This vendored checkout is run directly from source rather than installed as a package. How to run evals (models, **`--eval gpqa`**, **`OPENAI_BASE_URL`**, registering a sampler for your SGLang `--model-path`, etc.) otherwise follows upstream [simple-evals README](https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals).
+
+Add a local model alias once in `third_party/simple-evals/simple_evals.py` inside the `models = { ... }` dictionary so `simple-evals` knows how to call your running SGLang server. For the BDR server below, add:
+
+```python
+"qwen3_4b": ChatCompletionSampler(
+    model="Qwen/Qwen3-4B-Thinking-2507",
+    system_message=OPENAI_SYSTEM_MESSAGE_API,
+    max_tokens=32768,
+),
+```
 
 With **simple-evals** installed and the SGLang server already up (start it in the desired mode from [Run BDR](#run-bdr), using **`Qwen/Qwen3-4B-Thinking-2507`** as the model), point the client at **`http://127.0.0.1:<port>/v1`** and run GPQA:
 
 ```bash
 cd third_party/simple-evals
-OPENAI_BASE_URL="http://127.0.0.1:30000/v1" OPENAI_API_KEY="dummy" \
-python -m simple-evals.simple_evals --model <your_registered_simple_evals_model> --eval gpqa
+export OPENAI_BASE_URL="http://127.0.0.1:30000/v1" 
+export OPENAI_API_KEY="dummy"
+python simple_evals.py --model qwen3_4b_bdr --eval gpqa
 ```
 
 Override **`OPENAI_BASE_URL`** if your server is not on the default `http://127.0.0.1:30000/v1`. If you want a slightly more configurable wrapper, use **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)**.
@@ -167,7 +177,7 @@ Override **`OPENAI_BASE_URL`** if your server is not on the default `http://127.
 |-------|--------|-----------|-------|
 | Qwen/Qwen3-4B-Thinking-2507 | BF16 | GPQA | |
 | Qwen/Qwen3-4B-Thinking-2507 | INT4 | GPQA | |
-| Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | |
+| Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | 63.6364 |
 
 Fill from the paper or from [eval_primary/results/](eval_primary/results/).
 
