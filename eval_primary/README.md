@@ -8,7 +8,7 @@ This folder holds **accuracy** logs and summary tables for the **primary** paper
 
 **Canonical instructions:** [../README.md](../README.md#primary-accuracy-and-throughput) — GPQA client [Prepare](../README.md#prepare) under [Accuracy (primary)](../README.md#accuracy-primary).  
 **Script:** [../scripts/run_primary_eval_matrix.sh](../scripts/run_primary_eval_matrix.sh)  
-**Client:** [openai/simple-evals](https://github.com/openai/simple-evals)
+**Client:** [openai/simple-evals](https://github.com/openai/simple-evals) — included as submodule at [`third_party/simple-evals`](../third_party/simple-evals/); no separate clone needed
 
 ## Workflow
 
