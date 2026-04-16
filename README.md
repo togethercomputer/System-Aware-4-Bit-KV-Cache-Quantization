@@ -9,7 +9,8 @@ Official companion code for the paper **System-Aware 4-Bit KV Cache Quantization
   - [Get the code](#get-the-code)
   - [Server requirements](#server-requirements)
   - [Install BDR (sglang-fast-rotation)](#install-bdr-sglang-fast-rotation)
-  - [BDR environment variables](#bdr-environment-variables)
+  - [Run BDR](#run-bdr)
+  - [Quick demo (verify your install)](#quick-demo-verify-your-install)
 - [Primary accuracy and throughput](#primary-accuracy-and-throughput)
   - [Accuracy (primary)](#accuracy-primary)
     - [Prepare](#prepare)
@@ -34,7 +35,7 @@ Pinned commits: [SUBMODULE_VERSIONS.md](SUBMODULE_VERSIONS.md).
 
 ## How to run BDR
 
-This section is only about **BDR on `third_party/sglang-fast-rotation`**: clone the repo if needed, server flags (MHA / fa3 / triton), install that fork + **`fast_hadamard_transform`**, and the **`HADAMARD`** / **`ROTATE_V`** / **`HADAMARD_ORDER`** / **`--kv-cache-dtype`** knobs. **K-means ablations** use a different fork; install that under [Ablation study](#ablation-study-k-means-k-means--rotation).
+This section covers everything needed to run BDR on **`third_party/sglang-fast-rotation`**: get the code, install, and launch a server. **K-means ablations** use a different fork; see [Ablation study](#ablation-study-k-means-k-means--rotation).
 
 ### Get the code
 
@@ -43,7 +44,7 @@ git clone --recurse-submodules https://github.com/togethercomputer/System-Aware-
 cd System-Aware-4-Bit-KV-Cache-Quantization
 ```
 
-If you cloned without submodules: `git submodule update --init --recursive`. If that fails on nested deps, use [scripts/clone_submodules.sh](scripts/clone_submodules.sh) or `git submodule update --init third_party/sglang-fast-rotation third_party/sglang-kmeans`. Pinned SHAs: [SUBMODULE_VERSIONS.md](SUBMODULE_VERSIONS.md).
+If you cloned without submodules: `git submodule update --init third_party/sglang-fast-rotation`. Only `sglang-fast-rotation` is initialized by default; `sglang-kmeans` and `simple-evals` are opt-in (see [Install sglang-kmeans](#install-sglang-kmeans) and [Prepare](#prepare)).
 
 ### Server requirements
 
@@ -60,29 +61,74 @@ The paths in this README assume:
 ```bash
 cd third_party/sglang-fast-rotation/python
 pip install -e ".[all]"
-pip install fast_hadamard_transform
+pip install --no-build-isolation "git+https://github.com/Dao-AILab/fast-hadamard-transform.git"
 ```
 
-Check that the CLI is available:
+
+### Run BDR
+
+From `third_party/sglang-fast-rotation/python`. Three modes — pick one per run:
+
+**BF16 KV (baseline)**
+```bash
+python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  --model-path "Qwen/Qwen3-4B-Thinking-2507" \
+  --port 30000 \
+  --kv-cache-dtype auto
+```
+
+**INT4 KV (no rotation)**
+```bash
+HADAMARD=0 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  --model-path "Qwen/Qwen3-4B-Thinking-2507" \
+  --port 30000 \
+  --kv-cache-dtype int4
+```
+
+**INT4 + BDR (block Hadamard on K)**
+```bash
+HADAMARD=1 ROTATE_V=0 HADAMARD_ORDER=128 python -m sglang.launch_server \
+  --prefill-attention-backend fa3 \
+  --decode-attention-backend triton \
+  --model-path "Qwen/Qwen3-4B-Thinking-2507" \
+  --port 30000 \
+  --kv-cache-dtype int4
+```
+
+`HADAMARD_ORDER=128` works for Qwen3 models (128-dim heads); it must divide the head dim. For the full env variable reference, the BDR + K+V variant (`ROTATE_V=1`), and the complete mode matrix, see [docs/bdr_env_vars.md](docs/bdr_env_vars.md). Shell helpers: [scripts/](scripts/).
+
+### Quick demo (verify your install)
+
+With the server running in **any** of the three modes above, run the smoke-test script from the repository root:
 
 ```bash
-python -m sglang.launch_server --help | head
+pip install openai   # if not already installed
+python scripts/bdr_smoke_test.py
 ```
 
-Use a **fresh virtualenv** and match **CUDA / PyTorch** to this submodule’s `python/pyproject.toml` (and upstream SGLang docs).
+The script sends a **GPQA sample question** (graduate-level organic chemistry) to the server and streams the response.  A coherent, chemistry-relevant answer confirms that the BDR stack is correctly installed and the server is accepting requests.
 
-### BDR environment variables
+```
+Server : http://0.0.0.0:30000/v1
+Model  : Qwen/Qwen3-4B-Thinking-2507
 
-Set these in the shell **before** `python -m sglang.launch_server` on **sglang-fast-rotation** (read in `memory_pool.py`). Combine with **`--kv-cache-dtype`**.
+--- Prompt (GPQA sample) ---
+trans-Cinnamaldehyde was treated with methylmagnesium bromide, forming product 1.
+...
 
-| Variable | Role |
-|----------|------|
-| **`HADAMARD`** | `0` = no rotation; `1` = block Hadamard on **K** before INT4 KV (with matching **Q** at decode). |
-| **`ROTATE_V`** | `0` = K only (default BDR style); `1` = also rotate **V** and counter-rotate the attention output. |
-| **`HADAMARD_ORDER`** | Block size (e.g. `16`); **must divide head dim**; ignored when `HADAMARD=0`. |
-| **`--kv-cache-dtype`** | `auto` = BF16 KV baseline; `int4` = INT4 KV (with or without `HADAMARD=1` for BDR). |
+--- Response ---
+<model reasoning and answer streamed here>
+```
 
-Shell helpers live under [scripts/](scripts/) (see [Repository layout](#repository-layout)).
+Use `--port` or `--model` to match a non-default server:
+
+```bash
+python scripts/bdr_smoke_test.py --port 30001 --model Qwen/Qwen3-4B-Thinking-2507
+```
 
 ## Primary accuracy and throughput
 
@@ -92,28 +138,18 @@ Shell helpers live under [scripts/](scripts/) (see [Repository layout](#reposito
 
 #### Prepare
 
-**Prerequisite (GPQA client):** install a local checkout of **[openai/simple-evals](https://github.com/openai/simple-evals)** (not tore-eval):
+**Prerequisite (GPQA client):** **[openai/simple-evals](https://github.com/openai/simple-evals)** is included as a submodule at **`third_party/simple-evals`**. It is not initialized by default (not needed for BDR server runs), so init and install it explicitly:
 
 ```bash
-git clone https://github.com/openai/simple-evals.git
-cd simple-evals
+git submodule update --init third_party/simple-evals
+cd third_party/simple-evals
 pip install -e .
 pip install openai tqdm numpy
 ```
 
 How to run evals (models, **`--eval gpqa`**, **`OPENAI_BASE_URL`**, registering a sampler for your SGLang `--model-path`, etc.) follows upstream [simple-evals README](https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals).
 
-With **simple-evals** installed as above and the SGLang server up, point the client at **`http://127.0.0.1:<port>/v1`** and run **GPQA** as in the upstream doc. **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)** can print a `cd` into your checkout if you set **`SIMPLE_EVALS_DIR`**.
-
-Pick **one** server row per run (same **`--model-path`** and port; vary only env + **`--kv-cache-dtype`**). **BDR + INT4 (K+V)** is the same pattern with **`ROTATE_V=1`** and **`HADAMARD_ORDER`** set. Install **`fast_hadamard_transform`** and env semantics: [How to run BDR](#how-to-run-bdr).
-
-| Mode | Purpose | `HADAMARD` | `ROTATE_V` | `HADAMARD_ORDER` | `--kv-cache-dtype` |
-|------|---------|------------|------------|------------------|---------------------|
-| **BF16 KV** | Baseline, KV in bf16 | `0` | `0` | unset | `auto` |
-| **INT4 KV** | 4-bit KV, no rotation | `0` | `0` | unset | `int4` |
-| **INT4 + BDR (K only)** | 4-bit KV after block Hadamard on **K** (and matching **Q** at decode) | `1` | `0` | set (e.g. `16`; must divide head dim) | `int4` |
-
-Start the server from `third_party/sglang-fast-rotation/python` to match a row above, or use **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)** (`bf16`, `int4`, `bdr`, `bdr_kv`; default **`MODEL_PATH`** is **`Qwen/Qwen3-4B-Thinking-2507`**) and run the printed `launch_server` command.
+With **simple-evals** installed and the SGLang server up (start it in the desired mode from [Run BDR](#run-bdr), using **`Qwen/Qwen3-4B-Thinking-2507`** as the model), point the client at **`http://127.0.0.1:<port>/v1`** and run GPQA. **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)** (`bf16`, `int4`, `bdr`, `bdr_kv`) prints the server launch command and sets **`SIMPLE_EVALS_DIR`** to **`third_party/simple-evals`** by default.
 
 **Hub for logs / summary tables:** [eval_primary/](eval_primary/)
 
@@ -199,13 +235,14 @@ Fill from [eval_speed/results/](eval_speed/results/).
 
 ## Ablation study (k-means, k-means + rotation)
 
-Use **`third_party/sglang-kmeans`**: KV dump for calibration, [tools/fit_kv_centroids.py](tools/fit_kv_centroids.py), then `SGLANG_KV_CENTROIDS_PATH` for **k-means + INT4** and **k-means + BDR** (optional `HADAMARD` / `ROTATE_V`). Accuracy still uses **simple-evals** ([Prepare](#prepare); run GPQA per upstream docs).
+Use **`third_party/sglang-kmeans`**: KV dump for calibration, [tools/fit_kv_centroids.py](tools/fit_kv_centroids.py), then `SGLANG_KV_CENTROIDS_PATH` for **k-means + INT4** and **k-means + BDR** (optional `HADAMARD` / `ROTATE_V`). Accuracy still uses **simple-evals** from **`third_party/simple-evals`** ([Prepare](#prepare); run GPQA per upstream docs).
 
 ### Install sglang-kmeans
 
-Not needed for primary BF16 / INT4 / BDR ([How to run BDR](#how-to-run-bdr)). For this fork only:
+Not needed for primary BF16 / INT4 / BDR ([How to run BDR](#how-to-run-bdr)). Initialize the submodule (skipped by default), then install:
 
 ```bash
+git submodule update --init third_party/sglang-kmeans
 cd third_party/sglang-kmeans/python
 pip install -e ".[all]"
 pip install "flash-kmeans @ git+https://github.com/jindajia/flash-kmeans.git"
@@ -316,7 +353,9 @@ Fill from [eval_accuracy/results/](eval_accuracy/results/).
 |------|------|
 | [third_party/sglang-fast-rotation/](third_party/sglang-fast-rotation/) | **Primary** BF16 / INT4 / BDR — accuracy + speed |
 | [third_party/sglang-kmeans/](third_party/sglang-kmeans/) | **Ablation** k-means KV + dump / centroids |
-| [scripts/](scripts/) | `run_primary_eval_matrix.sh`, `run_eval_matrix.sh`, `run_genai_bench_example.sh`, `clone_submodules.sh` |
+| [third_party/simple-evals/](third_party/simple-evals/) | **GPQA accuracy client** (openai/simple-evals submodule; no separate clone needed) |
+| [docs/bdr_env_vars.md](docs/bdr_env_vars.md) | Full BDR env variable reference and mode matrix |
+| [scripts/](scripts/) | `bdr_smoke_test.py` (install smoke test), `run_primary_eval_matrix.sh`, `run_eval_matrix.sh`, `run_genai_bench_example.sh`, `clone_submodules.sh` |
 | [tools/](tools/) | `fit_kv_centroids.py` (ablation calibration) |
 | [eval_primary/](eval_primary/) | Primary **accuracy** logs / tables |
 | [eval_speed/](eval_speed/) | Primary **throughput** logs / tables |
