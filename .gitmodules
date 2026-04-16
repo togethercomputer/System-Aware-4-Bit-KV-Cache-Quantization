@@ -6,3 +6,7 @@
 	path = third_party/sglang-kmeans
 	url = https://github.com/jindajia/sglang-fork.git
 	branch = jinda_kmeans_rotation_dump
+[submodule "third_party/simple-evals"]
+	update = none
+	path = third_party/simple-evals
+	url = https://github.com/openai/simple-evals.git
