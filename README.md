@@ -1,6 +1,6 @@
 # System-Aware 4-Bit KV Cache Quantization
 
-Official companion code for the paper **System-Aware 4-Bit KV Cache Quantization** (Together). *Venue / arXiv / DOI: add at publication time.*
+Official companion code for the paper **System-Aware 4-Bit KV-Cache Quantization for Real-World LLM Serving** (Together).
 
 ## Contents
 
@@ -24,11 +24,11 @@ Official companion code for the paper **System-Aware 4-Bit KV Cache Quantization
 
 ## Introduction
 
-This work studies **4-bit KV cache quantization** with a **system-aware** recipe. Our primary method, **BDR (block-diagonal rotation)**, is **block Hadamard rotation on keys** (optional rotation on values) **before INT4 KV write**, implemented inside a **fork of [SGLang](https://github.com/sgl-project/sglang)**.
+This work studies **4-bit KV-cache quantization** under **real serving constraints** such as paged memory layouts, regular memory access, and fused attention execution. Our primary method, **BDR (block-diagonal rotation)**, applies a **block-diagonal Hadamard rotation** to the KV cache before **token-wise INT4 KV-cache quantization**, implemented directly inside a **fork of [SGLang](https://github.com/sgl-project/sglang)**.
 
 We ship two submodule branches on the same fork remote:
 
-- **[third_party/sglang-fast-rotation](third_party/sglang-fast-rotation)** — **Our proposed BDR:** fused INT4 + Rotation. Use this fork for **both accuracy and throughput** on **BF16**, **INT4**, and **BDR** (the main paper numbers).
+- **[third_party/sglang-fast-rotation](third_party/sglang-fast-rotation)** — **Our proposed BDR implementation:** fused block-diagonal rotation + INT4 KV-cache write. Use this fork for **both accuracy and throughput** on **BF16**, **INT4**, and **BDR** (the main paper numbers).
 - **[third_party/sglang-kmeans](third_party/sglang-kmeans)** — **Ablation study for kmeans, kmeans+rotation:** KV dump, k-means centroids, and k-means + rotation variants. Not required to reproduce the core BDR vs BF16 vs INT4 story.
 
 Pinned commits: [SUBMODULE_VERSIONS.md](SUBMODULE_VERSIONS.md).
@@ -40,8 +40,8 @@ This section covers everything needed to run BDR on **`third_party/sglang-fast-r
 ### Get the code
 
 ```bash
-git clone --recurse-submodules https://github.com/togethercomputer/System-Aware-4-Bit-KV-Cache-Quantization.git
-cd System-Aware-4-Bit-KV-Cache-Quantization
+git clone --recurse-submodules https://github.com/togethercomputer/Sys-aware-kv-int4.git
+cd Sys-aware-kv-int4
 ```
 
 If you cloned without submodules: `git submodule update --init third_party/sglang-fast-rotation`. Only `sglang-fast-rotation` is initialized by default; `sglang-kmeans` and `simple-evals` are opt-in (see [Install sglang-kmeans](#install-sglang-kmeans) and [Prepare](#prepare)).
