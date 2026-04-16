@@ -143,6 +143,8 @@ python scripts/bdr_smoke_test.py --port 30001 --model Qwen/Qwen3-4B-Thinking-250
 ```bash
 git submodule update --init --checkout third_party/simple-evals
 cd third_party/simple-evals
+mkdir -p simple_evals
+touch simple_evals/__init__.py
 pip install openai pandas requests jinja2 tqdm numpy
 ```
 
@@ -164,7 +166,7 @@ With **simple-evals** installed and the SGLang server already up (start it in th
 cd third_party/simple-evals
 export OPENAI_BASE_URL="http://127.0.0.1:30000/v1" 
 export OPENAI_API_KEY="dummy"
-python simple_evals.py --model qwen3_4b_bdr --eval gpqa
+python -m simple-evals.simple_evals --model qwen3_4b --eval gpqa --n-repeats 1
 ```
 
 Override **`OPENAI_BASE_URL`** if your server is not on the default `http://127.0.0.1:30000/v1`. If you want a slightly more configurable wrapper, use **[scripts/run_primary_eval_matrix.sh](scripts/run_primary_eval_matrix.sh)**.
