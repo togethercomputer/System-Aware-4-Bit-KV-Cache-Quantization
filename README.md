@@ -176,7 +176,9 @@ python -m simple-evals.simple_evals --model qwen3_4b --eval gpqa --n-repeats 3
 |-------|--------|-----------|-------|
 | Qwen/Qwen3-4B-Thinking-2507 | BF16 | GPQA | 66.6667 |
 | Qwen/Qwen3-4B-Thinking-2507 | INT4 | GPQA | 0 |
-| Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | 65.8249 |
+| Qwen/Qwen3-4B-Thinking-2507 | BDR-16 (K) | GPQA | 57.4074 |
+| Qwen/Qwen3-4B-Thinking-2507 | BDR-64 (K) | GPQA | 64.3098 |
+| Qwen/Qwen3-4B-Thinking-2507 | BDR-128 (K) | GPQA | 65.8249 |
 
 
 ### Throughput and latency (primary)
@@ -262,6 +264,8 @@ Cap: 5 min or 256 requests. Results: [eval_speed/results/20260416_203040/](eval_
 | INT4      | 256 | 11,624 |   225 |  51.1 |  1,237 | 21.25 | 21.50 | 21.57 | 256 |  23 |
 | INT4 + BDR (K-only, ord=128) | 256 | 11,732 |   266 |  51.6 |  1,148 | 20.99 | 21.12 | 21.19 | 256 |  22 |
 
+![Short context throughput: BF16 vs INT4 vs BDR](eval_speed/short_context_bf16_int4_bdr.png)
+
 **Long context — `D(16384, 1024)` (16 384 input / 1024 output tokens)**  
 Cap: 20 min or 64–256 requests (varies by concurrency). Results: [eval_speed/results/20260416_214449/](eval_speed/results/20260416_214449/) (conc 8–64), [eval_speed/results/20260416_233035/](eval_speed/results/20260416_233035/) (conc 128)
 
@@ -282,6 +286,8 @@ Cap: 20 min or 64–256 requests (varies by concurrency). Results: [eval_speed/r
 | BF16      | 128 |   559 |    310 | 32.9 | 113,583 | 145.96 | 220.85 | 221.91 | 148 | 271 |
 | INT4      | 128 |   701 |    527 | 12.3 |  57,654 | 142.19 | 208.11 | 210.82 | 153 | 224 |
 | INT4 + BDR (K-only, ord=128) | 128 |   701 |    535 | 12.3 |  57,054 | 142.09 | 208.05 | 210.73 | 153 | 224 |
+
+![Long context throughput: BF16 vs INT4 vs BDR](eval_speed/long_context_bf16_int4_bdr.png)
 
 ## Ablation study (k-means, k-means + rotation)
 
