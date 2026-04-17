@@ -85,9 +85,9 @@ python -m sglang.launch_server \
   --kv-cache-dtype auto
 ```
 
-**INT4 KV (no rotation)**
+**Original INT4 KV**
 ```bash
-HADAMARD=0 python -m sglang.launch_server \
+python -m sglang.launch_server \
   --prefill-attention-backend fa3 \
   --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-4B-Thinking-2507" \
@@ -95,9 +95,9 @@ HADAMARD=0 python -m sglang.launch_server \
   --kv-cache-dtype int4
 ```
 
-**INT4 + BDR (block Hadamard on K)**
+**BDR (block diagnoal rotation on K)**
 ```bash
-HADAMARD=1 ROTATE_V=0 HADAMARD_ORDER=128 python -m sglang.launch_server \
+HADAMARD=1 HADAMARD_ORDER=128 python -m sglang.launch_server \
   --prefill-attention-backend fa3 \
   --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-4B-Thinking-2507" \
@@ -139,7 +139,7 @@ Answer the following multiple choice question.....
 
 #### Prepare
 
-**Prerequisite (GPQA client):** **[openai/simple-evals](https://github.com/openai/simple-evals)** is included as a submodule at **`third_party/simple-evals`**. It is not initialized by default (not needed for BDR server runs), so init it explicitly and install the runtime dependencies:
+**Prerequisite (GPQA client):** **[openai/simple-evals](https://github.com/openai/simple-evals)** is included as a submodule at **`third_party/simple-evals`**.
 
 ```bash
 git submodule update --init --checkout third_party/simple-evals
@@ -149,9 +149,7 @@ touch simple_evals/__init__.py
 pip install openai pandas requests jinja2 tqdm numpy
 ```
 
-This vendored checkout is run directly from source rather than installed as a package. How to run evals (models, **`--eval gpqa`**, **`OPENAI_BASE_URL`**, registering a sampler for your SGLang `--model-path`, etc.) otherwise follows upstream [simple-evals README](https://github.com/openai/simple-evals/blob/main/README.md#running-the-evals).
-
-Add a local model alias once in `third_party/simple-evals/simple_evals.py` inside the `models = { ... }` dictionary so `simple-evals` knows how to call your running SGLang server. For the BDR server below, add:
+Add a local model alias once in `third_party/simple-evals/simple_evals.py` inside the `models = { ... }` dictionary so `simple-evals` and set max_tokens=32768:
 
 ```python
 "qwen3_4b": ChatCompletionSampler(
