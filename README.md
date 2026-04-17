@@ -202,7 +202,7 @@ python -m sglang.launch_server \
   --decode-attention-backend triton \
   --model-path "Qwen/Qwen3-8B" \
   --port 30000 \
-  --kv-cache-dtype auto
+  --kv-cache-dtype int4
 ```
 
 **Terminal 2 — client** (after `pip install genai-bench`; matches ~256 input / 32 output tokens and concurrency 16 — see [traffic scenarios](https://docs.sglang.ai/genai-bench/user-guide/scenario-definition/)):
