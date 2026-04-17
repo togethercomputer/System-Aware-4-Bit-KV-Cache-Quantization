@@ -25,6 +25,8 @@ Cap: 5 min or 256 requests. Results: [results/20260416_203040/](results/20260416
 
 ![Short context throughput: BF16 vs INT4 vs BDR](short_context_bf16_int4_bdr.png)
 
+![Short context mean output TPS vs TTFT](short_context_mean_tps_vs_ttft_color_kv_marker_concurrency.png)
+
 ## Long context — `D(16384, 1024)` (16 384 input / 1024 output tokens)
 
 Cap: 20 min or 64–256 requests (varies by concurrency). Results: [results/20260416_214449/](results/20260416_214449/) (conc 8–64), [results/20260416_233035/](results/20260416_233035/) (conc 128)
@@ -48,3 +50,5 @@ Cap: 20 min or 64–256 requests (varies by concurrency). Results: [results/2026
 | INT4 + BDR (K-only, ord=128) | 128 |   701 |    535 | 12.3 |  57,054 | 142.09 | 208.05 | 210.73 | 153 | 224 |
 
 ![Long context throughput: BF16 vs INT4 vs BDR](long_context_bf16_int4_bdr.png)
+
+![Long context mean output TPS vs TTFT](long_context_mean_tps_vs_ttft_color_kv_marker_concurrency.png)
