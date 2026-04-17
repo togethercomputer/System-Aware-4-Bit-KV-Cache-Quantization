@@ -7,3 +7,5 @@ venv/
 .env
 *.log
 .DS_Store
+eval_speed/logs
+eval_speed/results
