@@ -1,6 +1,6 @@
 # System-Aware 4-Bit KV Cache Quantization
 
-Official companion code for the paper **System-Aware 4-Bit KV-Cache Quantization for Real-World LLM Serving** .
+Official companion code for the paper **System-Aware 4-Bit KV-Cache Quantization for Real-World LLM Serving**.
 
 ## Contents
 
@@ -41,7 +41,7 @@ Pinned commits: [SUBMODULE_VERSIONS.md](SUBMODULE_VERSIONS.md).
 
 ## How to run BDR
 
-This section covers everything needed to run BDR on **`third_party/sglang-fast-rotation`**: get the code, install, and launch a server. **K-means ablations** use a different fork; see [Ablation study](#ablation-study-k-means-k-means--rotation).
+This section covers everything needed to run BDR on **`third_party/sglang-fast-rotation`**: get the code, install, and launch a server.
 
 ### Get the code
 
@@ -50,19 +50,18 @@ git clone --recurse-submodules https://github.com/togethercomputer/Sys-Aware-KV-
 cd Sys-Aware-KV-INT4
 ```
 
-If you cloned without submodules: `git submodule update --init third_party/sglang-fast-rotation`. Only `sglang-fast-rotation` is initialized by default; `sglang-kmeans` and `simple-evals` are opt-in (see [Install sglang-kmeans](#install-sglang-kmeans) and [Prepare](#prepare)).
+If you cloned without submodules: `git submodule update --init third_party/sglang-fast-rotation`.
 
 ### Server requirements
 
-The paths in this README assume:
+
+The BDR implementation is built on top of the SGLang codebase and currently assumes the following setup:
 
 - **MHA models only** — **MLA** and other non-MHA layouts are **not supported** for these KV / BDR settings.
-- **Prefill:** **`--prefill-attention-backend fa3`** (use **`fa4`** only if your GPU and SGLang build require it; see [SGLang attention backend](https://docs.sglang.ai/advanced_features/attention_backend.html)).
-- **Decode:** **`--decode-attention-backend triton`**.
+- **Prefill backend:** **`fa3`**.
+- **Decode backend:** **`triton`**.
 
-### Install BDR (sglang-fast-rotation)
-
-**BDR** (block Hadamard rotation before INT4 KV) is implemented in **`third_party/sglang-fast-rotation`**. Install that fork, then the Hadamard extra used on the BDR path:
+### Install BDR
 
 ```bash
 cd third_party/sglang-fast-rotation/python
@@ -72,8 +71,6 @@ pip install --no-build-isolation "git+https://github.com/Dao-AILab/fast-hadamard
 
 
 ### Run BDR
-
-From `third_party/sglang-fast-rotation/python`. Three modes — pick one per run:
 
 **BF16 KV (baseline)**
 ```bash
@@ -105,7 +102,7 @@ HADAMARD=1 ROTATE_V=0 HADAMARD_ORDER=128 python -m sglang.launch_server \
   --kv-cache-dtype int4
 ```
 
-`HADAMARD_ORDER=128` works for Qwen3 models (128-dim heads); it must divide the head dim. For the full env variable reference, the BDR + K+V variant (`ROTATE_V=1`), and the complete mode matrix, see [docs/bdr_env_vars.md](docs/bdr_env_vars.md). Shell helpers: [scripts/](scripts/).
+For the full env variable reference, and the complete mode matrix, see [docs/bdr_env_vars.md](docs/bdr_env_vars.md). 
 
 ### Quick demo (verify your install)
 
@@ -113,28 +110,23 @@ With the server running in **any** of the three modes above, run the smoke-test 
 
 ```bash
 pip install openai   # if not already installed
-python scripts/bdr_smoke_test.py
+python scripts/bdr_smoke_test.py --port 30001 --model Qwen/Qwen3-4B-Thinking-2507
 ```
 
-The script sends a **GPQA sample question** (graduate-level organic chemistry) to the server and streams the response.  A coherent, chemistry-relevant answer confirms that the BDR stack is correctly installed and the server is accepting requests.
+The script sends a **GPQA sample question** to the server and streams the response. 
 
 ```
 Server : http://0.0.0.0:30000/v1
 Model  : Qwen/Qwen3-4B-Thinking-2507
 
 --- Prompt (GPQA sample) ---
-trans-Cinnamaldehyde was treated with methylmagnesium bromide, forming product 1.
+Answer the following multiple choice question.....
 ...
 
 --- Response ---
 <model reasoning and answer streamed here>
 ```
 
-Use `--port` or `--model` to match a non-default server:
-
-```bash
-python scripts/bdr_smoke_test.py --port 30001 --model Qwen/Qwen3-4B-Thinking-2507
-```
 
 ## Primary accuracy and throughput
 
@@ -182,7 +174,7 @@ python -m simple-evals.simple_evals --model qwen3_4b --eval gpqa --n-repeats 3
 | Model | Method | Benchmark | Score |
 |-------|--------|-----------|-------|
 | Qwen/Qwen3-4B-Thinking-2507 | BF16 | GPQA | |
-| Qwen/Qwen3-4B-Thinking-2507 | INT4 | GPQA | |
+| Qwen/Qwen3-4B-Thinking-2507 | INT4 | GPQA | 0 |
 | Qwen/Qwen3-4B-Thinking-2507 | BDR (K-only) | GPQA | 65.8249 |
 
 
@@ -237,9 +229,9 @@ Tune `--max-time-per-run`, `--max-requests-per-run`, `--num-concurrency`, and `-
 
 | Config | Env | `--kv-cache-dtype` |
 |--------|-----|-------------------|
-| BF16 KV | `HADAMARD=0` or unset | `auto` |
+| BF16 KV | `HADAMARD=0` | `auto` |
 | INT4 KV | `HADAMARD=0` | `int4` |
-| BDR + INT4 | `HADAMARD=1` `ROTATE_V=0` `HADAMARD_ORDER=16` | `int4` |
+| BDR + INT4 | `HADAMARD=1` `ROTATE_V=0` `HADAMARD_ORDER=128` | `int4` |
 
 SGLang’s built-in `bench_serving` ([bench_serving](https://github.com/sgl-project/sglang/blob/main/docs/developer_guide/bench_serving.md)) is optional; this repo standardizes on **genai-bench** for comparable sweeps and reporting.
 
